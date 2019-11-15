@@ -12,7 +12,7 @@ MemCtrl::MemCtrl(sc_module_name name): sc_module(name),
    
    cout<<name<<" constructed"<<endl;
    
-	//num_weights_l1 + num_biases_l1 + num_weights_l2 + num_biases_l2 + 10*image_length
+//num_weights_l1 + num_biases_l1 + num_weights_l2 + num_biases_l2 + 10*image_length
    mem.reserve(784*30+30+30*10+10+10*784);
 
 }
@@ -37,7 +37,7 @@ void MemCtrl::b_transport(pl_t& pl, sc_time& offset)
       {
       case TLM_WRITE_COMMAND:
          for(int i=0; i<len; i++)
-            mem[adr+i]=((in_data_t*)buf)[i];
+         mem[adr+i]=((in_data_t*)buf)[i];
          pl.set_response_status(TLM_OK_RESPONSE);
          break;
          
@@ -57,18 +57,19 @@ void MemCtrl::b_transport(pl_t& pl, sc_time& offset)
 void MemCtrl::file_extract()
 {
    
-   double weights_line;
+   //double weights_line;
+   string weights_line;
    string biases_line;
    string str;
    int lines;
-   int j, k=0;
+   int j, k=0, p;
    int len [2] = {784, 30};
    int sum = 0;
    cout<<"\nExtracting data from files:"<<endl;
    
    for(int i=0; i<2; i++)
       {
-			j=0;
+	 j=0;
          //extracting weights of i-th layer
          str = "../saved_data/weights_";
          str = str + to_string(i+1);
@@ -78,37 +79,54 @@ void MemCtrl::file_extract()
          //sum += lines;
          cout<<"-layer no."<< i+1 <<": "<< num_of_neurons[i] <<" neurons"<<endl;
          ifstream weights_file(str);
-         if(weights_file.is_open())
-            while(!weights_file.eof())
-               {
-						
-						weights_file >> weights_line;
-						mem.push_back(weights_line);
-               }
+         /*if(weights_file.is_open()) {
+            
+               do {			
+			weights_file >> weights_line;
+			mem.push_back(weights_line);
+			cout << weights_line<<" ";
+               } while(!weights_file.eof());
+         }
          else
-            cout<<"ERROR OPENING WEIGHTS_FILE number: "<<i<<endl;
-         weights_file.close();
+         cout<<"ERROR OPENING WEIGHTS_FILE number: "<<i<<endl;
+         weights_file.close();*/
+         
+         
+	  if(weights_file.is_open())
+	      {
+		for(int p=0; p<lines; p++)
+		    {
+		    	if(p%2==0){
+		    		for(int r=0; r<len[i]; r++){
+		       			if(r == len[i]-1)
+					  {
+					     getline(weights_file, weights_line, '\n');
+					     //k = 0;
+					  }
+				       else
+					  {
+					     getline(weights_file, weights_line, ' ');
+					     //k++;
+					  }
+					 // std::cout << stod(weights_line) << " ";
+		      			  mem.push_back(stod(weights_line));
+				}
+		     }  else 
+		       {
+		      		getline(weights_file, weights_line, '\n');
+		      		//std::cout << stod(weights_line) << " ";
+		       mem.push_back(stod(weights_line));
+		      	}
+		    }
+	      }
+	     
+	   else
+	      {
+		 cout<<RED<<"ERROR OPENING WEIGHTS_FILE"<<endl;
+		 cout<<RED<<"         @"<<sc_time_stamp()<<"   #"<<name()<<endl;
+	      }
+	   weights_file.close();   
 			
-
-         /*j = 0;
-         //extracting biases
-         str = "../saved_data/biases_";
-         str = str + to_string(i+1);
-         str = str+".txt";
-         ifstream biases_file(str);
-
-         if(biases_file.is_open() )
-            while(j != lines)
-               {
-                  //extracting biases
-                  getline(biases_file,biases_line);   
-                  mem.push_back(stod(biases_line));
-                  j++;
-               }
-         else
-            cout<<RED<<"ERROR OPENING BIASES_FILE number: "<<i<<RST<<endl;
-        
-         biases_file.close();*/
       }
    images_extraction();
    
@@ -132,16 +150,6 @@ int MemCtrl::num_of_lines(string str)
    
 }
 
-/*int MemCtrl::sum_of_sv(int to_element)
-{
-   if(to_element == -1)
-      return 0;
-   int sum = 0;
-   for(int i=0;i<=to_element;i++ )
-      sum += sv_array[i];
-   
-   return sum;
-}*/
 
 
 void MemCtrl::images_extraction()
@@ -168,9 +176,11 @@ void MemCtrl::images_extraction()
                      getline(y_file, y_line, ' ');
                      k++;
                   }
+              // std::cout << stod(y_line) << " ";
                mem.push_back(stod(y_line));
             }
       }
+     
    else
       {
          cout<<RED<<"ERROR OPENING Y FILE"<<endl;
