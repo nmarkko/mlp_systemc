@@ -9,6 +9,7 @@
 #define WIDTH   16
 #define Q   SC_RND
 #define O   SC_SAT_SYM
+#define LAYER_NUM 3
 using namespace sc_dt;
 using namespace tlm;
 using namespace std;
