@@ -47,7 +47,6 @@ void Mlp::b_transport(pl_t& pl, sc_time& offset)
 
 }
 
-
 void Mlp::classify ()
 {
    in_data_t fifo_tmp;
@@ -61,19 +60,21 @@ void Mlp::classify ()
    {
       while(start==SC_LOGIC_0)//wait for start reg
       {
-         #ifdef QUANTUM
-         qk.inc(sc_time(10, SC_NS));
-         offset = qk.get_local_time();
-         qk.set_and_sync(offset);
-         #else
-         offset += sc_time(10, SC_NS);
-         #endif
+			#ifdef QUANTUM
+			qk.inc(sc_time(10, SC_NS));
+			offset = qk.get_local_time();
+			qk.set_and_sync(offset);
+			#else
+			offset += sc_time(10, SC_NS);
+			#endif
          
       }
       start=SC_LOGIC_0;
       toggle =  SC_LOGIC_1; 
       p_out->write(toggle);// wait
-      for( int p=0; p<784; p++)
+	  
+	 
+      for( int p=0; p<SV_LEN; p++)
       {
          //send interrupt and then waste time until there is something in fifo
          //waiting for test image in fifo
@@ -94,128 +95,76 @@ void Mlp::classify ()
 		
       
       res_v.clear();
-		//calculating outputs of a hidden layer
-      for(unsigned int neuron=0; neuron<30; neuron++)
-      {
-         acc=0;
+	  
+	  for(unsigned int layer = 1; layer < LAYER_NUM; layer++) {
+		//calculating outputs of neurons in a single layer
+		  for(unsigned int neuron=0; neuron < neuron_array[layer]; neuron++)
+		  {
+			 acc=0;
+			 //calculating output of a single neuron
+			 for( int i=0; i < neuron_array[layer-1]; i++)
+			 {
+				toggle =  SC_LOGIC_1; 
+				p_out->write(toggle);
+			   //send interrupt and then waste time until there is something in fifo
+			   //waiting for weights in fifo
+			   while(!p_fifo->nb_read(fifo_tmp))
+			   {
+				  #ifdef QUANTUM
+				  qk.inc(sc_time(10, SC_NS));
+				  offset = qk.get_local_time();
+				  qk.set_and_sync(offset);
+				  #else
+				  offset += sc_time(10, SC_NS);
+				  #endif
+			   }
+				acc+=image_v[i]*fifo_tmp;
+				toggle =  SC_LOGIC_0; 
+				p_out->write(toggle);
 
-         for( int i=0; i<784; i++)
-         {
-            //p=1.0;
-            toggle =  SC_LOGIC_1; 
-            p_out->write(toggle);
-            
-				
-               //send interrupt and then waste time until there is something in fifo
-               //waiting for weights in fifo
-               while(!p_fifo->nb_read(fifo_tmp))
-               {
-                  #ifdef QUANTUM
-                  qk.inc(sc_time(10, SC_NS));
-                  offset = qk.get_local_time();
-                  qk.set_and_sync(offset);
-                  #else
-                  offset += sc_time(10, SC_NS);
-                  #endif
-               }
-					
-
-
-               acc+=image_v[i]*fifo_tmp;
-               toggle =  SC_LOGIC_0; 
-               p_out->write(toggle);
-
-         }
-         toggle =  SC_LOGIC_1; 
-         p_out->write(toggle);// wait
-         //send interrupt and then waste time until there is something in fifo
-         //waiting for bias in fifo
-         while(!p_fifo->nb_read(fifo_tmp))
-         {
-            #ifdef QUANTUM
-            qk.inc(sc_time(10, SC_NS));
-            offset = qk.get_local_time();
-            qk.set_and_sync(offset);
-            #else
-            offset += sc_time(10, SC_NS);
-            #endif
-         }
-         toggle =  SC_LOGIC_0; 
-         p_out->write(toggle);
-         acc+=fifo_tmp;
+			 }
+			 toggle =  SC_LOGIC_1; 
+			 p_out->write(toggle);// wait
+			 //send interrupt and then waste time until there is something in fifo
+			 //waiting for bias in fifo
+			 while(!p_fifo->nb_read(fifo_tmp))
+			 {
+				#ifdef QUANTUM
+				qk.inc(sc_time(10, SC_NS));
+				offset = qk.get_local_time();
+				qk.set_and_sync(offset);
+				#else
+				offset += sc_time(10, SC_NS);
+				#endif
+			 }
+			 toggle =  SC_LOGIC_0; 
+			 p_out->write(toggle);
+			 acc+=fifo_tmp;
 
 			//leakyReLu
 			if(acc<0)
 				acc*=0.001;
-			
-         res_v.push_back (acc);
-         
-      }
-		output_v.clear();
-		//calculating outputs of output layer
-		for(unsigned int neuron=0; neuron<10; neuron++)
-      {
-         acc=0;
-
-         for( int i=0; i<30; i++)
-         {
-            //p=1.0;
-            toggle =  SC_LOGIC_1; 
-            p_out->write(toggle);
-            
 				
-               //send interrupt and then waste time until there is something in fifo
-               //waiting for weights in fifo
-               while(!p_fifo->nb_read(fifo_tmp))
-               {
-                  #ifdef QUANTUM
-                  qk.inc(sc_time(10, SC_NS));
-                  offset = qk.get_local_time();
-                  qk.set_and_sync(offset);
-                  #else
-                  offset += sc_time(10, SC_NS);
-                  #endif
-               }
-					
-               acc+=res_v[i]*fifo_tmp;
-               toggle =  SC_LOGIC_0; 
-               p_out->write(toggle);
-
-         }
-
-         toggle =  SC_LOGIC_1; 
-         p_out->write(toggle);// wait
-         //send interrupt and then waste time until there is something in fifo
-         //waiting for bias in fifo
-         while(!p_fifo->nb_read(fifo_tmp))
-         {
-            #ifdef QUANTUM
-            qk.inc(sc_time(10, SC_NS));
-            offset = qk.get_local_time();
-            qk.set_and_sync(offset);
-            #else
-            offset += sc_time(10, SC_NS);
-            #endif
-         }
-         toggle =  SC_LOGIC_0; 
-         p_out->write(toggle);
-
-         acc+=fifo_tmp;
-			//leakyReLu
-			if(acc<0)
-				acc*=0.001;
-			
-         output_v.push_back (acc);
-         
-      }
-      //find most convincing result of 10 cores
-      max_res=output_v[0];
+			res_v.push_back (acc);
+			 
+		  }
+		  //up until the last layer
+		  //output of the current layer is input for the next
+		  if(layer != LAYER_NUM-1) {
+			  image_v.clear();
+			  image_v = res_v;
+			  res_v.clear();
+			  }
+	  }
+	  
+      //find most convincing result of 10 output neurons
+      max_res=res_v[0];
       cl_num=0;
       for(int i=1; i<10; i++)
       {
-         if(max_res<output_v[i])
+         if(max_res<res_v[i])
          {
-            max_res=output_v[i];
+            max_res=res_v[i];
             cl_num=(num_t)i;
          }
       }
