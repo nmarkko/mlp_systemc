@@ -5,12 +5,12 @@
 Mlp::Mlp(sc_module_name name): sc_module(name)
 {
    s_mlp_t.register_b_transport(this, &Mlp::b_transport);
-   cout<<name<<" constucted"<<endl;
+   cout<<name<<" constructed"<<endl;
    SC_THREAD(classify);
    
    image_v.reserve(784);
    res_v.reserve(30);
-	output_v.reserve(10);
+   output_v.reserve(10);
    toggle = SC_LOGIC_0;
    start = SC_LOGIC_0;
 }
@@ -95,13 +95,12 @@ void Mlp::classify ()
 		
       
       res_v.clear();
-	  
+	  //calculating outputs of each layer
 	  for(unsigned int layer = 1; layer < LAYER_NUM; layer++) {
-		//calculating outputs of neurons in a single layer
-		  for(unsigned int neuron=0; neuron < neuron_array[layer]; neuron++)
+		  //calculating outputs of each neuron in a layer
+		  for(unsigned int neuron = 0; neuron < neuron_array[layer]; neuron++)
 		  {
 			 acc=0;
-			 //calculating output of a single neuron
 			 for( int i=0; i < neuron_array[layer-1]; i++)
 			 {
 				toggle =  SC_LOGIC_1; 
@@ -148,8 +147,8 @@ void Mlp::classify ()
 			res_v.push_back (acc);
 			 
 		  }
-		  //up until the last layer
-		  //output of the current layer is input for the next
+		  //up until the last layer, clear inputs of current layer &
+		  //outputs of current layer become inputs for next layer
 		  if(layer != LAYER_NUM-1) {
 			  image_v.clear();
 			  image_v = res_v;
@@ -168,7 +167,7 @@ void Mlp::classify ()
             cl_num=(num_t)i;
          }
       }
-		//std::cout<<"MLP result calculated. "<<cl_num<<std::endl;
+      //std::cout<<"MLP result calculated. "<<cl_num<<std::endl;
       //classification of test image finished, send interrupt to test bench
       toggle =  SC_LOGIC_1; 
       p_out->write(toggle);// wait
