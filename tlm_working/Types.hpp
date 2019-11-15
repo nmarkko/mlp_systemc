@@ -3,6 +3,8 @@
 #define TYPES_H
 #include <systemc>
 #include <array>
+#include <sstream>
+#include <fstream>
 #define SV_LEN 784
 #define QUANTUM
 
