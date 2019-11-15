@@ -5,7 +5,7 @@
 VP::VP(sc_module_name name) :
 	sc_module(name),
 	ic("Interconnect"),
-	mlp("MultyLayerPerceptron"),
+	mlp("MultiLayerPerceptron"),
    prep("Preprocessor"),
    ram("RAM"),
 
