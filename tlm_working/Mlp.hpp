@@ -34,7 +34,7 @@ class Mlp : public sc_module
       //Mlp VARIABLES
       vector <in_data_t> image_v;
       vector <in_data_t> res_v;
-		vector <in_data_t> output_v;
+      vector <in_data_t> output_v;
       in_data_t tmp_res;
       in_data_t max_res;
       num_t cl_num;
