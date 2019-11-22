@@ -284,7 +284,7 @@ void TB::verify()
 
    //REPORT FINAL RESULTS ON ALL IMAGES
    cout<<"Number of classifications : "<<lines<<endl;
-   cout<<"Percentage: "<<(float)match/lines*100<<"\t@"<<sc_time_stamp()<<"\t#"<<name()<<endl;
+   cout<<"Percentage: "<<(float)match/lines*100<<"%\t@"<<sc_time_stamp()<<"\t#"<<name()<<endl;
    return;
 
 }
