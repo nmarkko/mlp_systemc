@@ -57,8 +57,7 @@ void Mlp::classify ()
 
    while(1)
    {
-idle: //wait for start reg
-
+idle: if(start != SC_LOGIC_0) goto start_state;//wait for start reg
 		#ifdef QUANTUM
 		qk.inc(sc_time(10, SC_NS));
 		offset = qk.get_local_time();
@@ -66,9 +65,7 @@ idle: //wait for start reg
 		#else
 		offset += sc_time(10, SC_NS);
 		#endif
-
-	  if(start == SC_LOGIC_0) goto idle;
-	  else goto start_state;
+	goto idle;
 	  start_state:
       start=SC_LOGIC_0;
       toggle =  SC_LOGIC_1; 
@@ -80,7 +77,7 @@ idle: //wait for start reg
 	  load_image:
          //send interrupt and then waste time until there is something in fifo
          //waiting for test image in fifo
-			wait_pixel:
+			wait_pixel: if(p_fifo->nb_read(fifo_tmp)) goto load_pixel;
             #ifdef QUANTUM
             qk.inc(sc_time(10, SC_NS));
             offset = qk.get_local_time();
@@ -88,8 +85,7 @@ idle: //wait for start reg
             #else
             offset += sc_time(10, SC_NS);
             #endif
-			if(p_fifo->nb_read(fifo_tmp)) goto load_pixel;
-			else goto wait_pixel;
+			goto wait_pixel;
 			load_pixel:
 	  image_v[p]= fifo_tmp;
 	  toggle =  SC_LOGIC_0; 
@@ -113,7 +109,7 @@ idle: //wait for start reg
 				p_out->write(toggle);
 				   //send interrupt and then waste time until there is something in fifo
 				   //waiting for weights in fifo
-					wait_weight:   				  
+					wait_weight:   	if(p_fifo->nb_read(fifo_tmp)) goto load_weight;			  
 							#ifdef QUANTUM
 						  qk.inc(sc_time(10, SC_NS));
 						  offset = qk.get_local_time();
@@ -121,8 +117,7 @@ idle: //wait for start reg
 						  #else
 						  offset += sc_time(10, SC_NS);
 						  #endif
-					if(p_fifo->nb_read(fifo_tmp)) goto load_weight;
-					else goto wait_weight;
+					goto wait_weight;
 				load_weight:	
 				acc+=image_v[i]*fifo_tmp;
 				toggle =  SC_LOGIC_0; 
@@ -135,7 +130,7 @@ idle: //wait for start reg
 				p_out->write(toggle);// wait
 				//send interrupt and then waste time until there is something in fifo
 				//waiting for bias in fifo
-				wait_bias:   				  
+				wait_bias:  if(p_fifo->nb_read(fifo_tmp)) goto load_bias; 				  
 						#ifdef QUANTUM
 					  qk.inc(sc_time(10, SC_NS));
 					  offset = qk.get_local_time();
@@ -143,8 +138,8 @@ idle: //wait for start reg
 					  #else
 					  offset += sc_time(10, SC_NS);
 					  #endif
-				if(p_fifo->nb_read(fifo_tmp)) goto load_bias;
-				else goto wait_bias;
+				
+				goto wait_bias;
 				load_bias:
 				toggle =  SC_LOGIC_0; 
 				p_out->write(toggle);
