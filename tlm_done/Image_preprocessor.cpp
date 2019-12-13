@@ -2,6 +2,14 @@
 #define Image_preprocessor_C
 #include "Image_preprocessor.hpp"
 
+//gaussian filter kernel 5x5, standard deviation 1
+static const in_data_t filter[5][5] = {{0.0037,0.0146 ,0.0256 , 0.0146 ,0.0037 },
+{0.0146 ,0.0586 ,0.0952 ,0.0586 ,0.0146 },
+{0.0256 ,0.0952 ,0.1502 ,0.0952 ,0.0256 },
+{0.0146 ,0.0586 ,0.0952 ,0.0586 ,0.0146 },
+{0.0037,0.0146 ,0.0256 , 0.0146 ,0.0037 }};
+
+
 Image_preprocessor::Image_preprocessor(sc_module_name name):sc_module(name)
 {
    s_prep_t.register_b_transport(this, &Image_preprocessor::b_transport);
@@ -111,68 +119,49 @@ void Image_preprocessor::proc()
    }
 }
 
-
-
-
-
 vector<in_data_t> Image_preprocessor:: Image_preprocessing(vector <in_data_t> image)
 {
    
-   vector <in_data_t> new_image;
-   new_image.reserve(784);
-	p_t x_center, y_center;
-
-   calc_center(image, x_center, y_center);
-   //p_t x_diff = 10 - x_center;
-	//p_t y_diff = 10 - y_center;
-	//TRIAL VERSION - SUBJECT TO CHANGE
-	p_t x_diff = 14 - x_center;
-	p_t y_diff = 14 - y_center;
-   
-   
-   for (int x=0; x<28; x++)
+   vector <acc_t> new_image;
+   vector <in_data_t> final_image;
+   new_image.reserve(576); //576=24*24
+   final_image.reserve(784);
+   new_image.clear();
+   final_image.clear();
+	for (int x=0; x<28; x++)
       for(int y = 0; y<28; y++)
          {
             new_image.push_back(0.0);
+            final_image.push_back(0.0);
          }
-	
-	p_t x_new_coord=0, y_new_coord=0;
 
-   /*for (int x=0; x<20; x++)
-      for(int y = 0; y<20; y++)
-         {
-				x_new_coord = x+4+x_diff;
-				y_new_coord = y+4+y_diff;
+    int height = 28;
+    int width = 28;
+    int filterHeight = 5;
+    int filterWidth = 5;
+    int newImageHeight = height-filterHeight+1;
+    int newImageWidth = width-filterWidth+1;
+    int i,j,h,w;
 
-            if( (x_new_coord >= 0) && (x_new_coord < 28) )
-					if( (y_new_coord >= 0) && (y_new_coord < 28) )
-						new_image(28*x_new_coord + y_new_coord) = image(28*x+y);
-
-         }*/
-   
-   //return new_image;
-	return image;
+        for (i=0 ; i<newImageHeight ; i++) {
+            for (j=0 ; j<newImageWidth ; j++) {
+                for (h=i ; h<i+filterHeight ; h++) {
+                    for (w=j ; w<j+filterWidth ; w++) {
+                        new_image[i*newImageHeight+j] += filter[h-i][w-j]*image[h*height+w];
+                    }
+                }
+            }
+        }
+        
+        for(int x=0; x<height; x++) {
+                for(int y=0; y<height; y++){
+                	if( (x<2 || x>25) && (y<2 || y>25))
+                		final_image[x*height+y]=0.0;
+                	else
+                		final_image[x*height+y]=new_image[(x-2)*newImageHeight+y-2];
+                }
+       }
+   return final_image;
 }
-
-
-void Image_preprocessor::calc_center(vector<in_data_t> image, p_t& x_CenterOfMass, p_t& y_CenterOfMass)
-{
-   double sum_intensity = 0;
-   double sum_x, sum_y;
-   
-   for (int x=0; x<28; x++)
-      for(int y = 0; y<28; y++)
-         {
-            sum_intensity+=image[28*x+y];
-            sum_x+=x*image[28*x+y];
-            sum_y+=y*image[28*x+y];
-         }
-  //adding 0.5 causes it to do proper rounding.
-  x_CenterOfMass = (p_t)(0.5+sum_x/sum_intensity);
-  y_CenterOfMass = (p_t)(0.5+sum_y/sum_intensity); 
-   
-   
-}
-
 
 #endif

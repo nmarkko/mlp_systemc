@@ -27,7 +27,6 @@ class Image_preprocessor : public sc_module
    protected:
 
       void b_transport(pl_t&, sc_time&);
-      void calc_center(vector<in_data_t> image, p_t& x_center, p_t& y_center);
       void proc();
 
       vector<in_data_t> Image_preprocessing(vector <in_data_t> image);
