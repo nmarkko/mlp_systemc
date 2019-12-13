@@ -99,6 +99,7 @@ idle: if(start != SC_LOGIC_0) goto start_state;//wait for start reg
       
       res_v.clear();
 	  //calculating outputs of each layer
+	int layer=1;
 	layer_state:
 		unsigned int neuron = 0;
 		neuron_state:
@@ -145,7 +146,6 @@ idle: if(start != SC_LOGIC_0) goto start_state;//wait for start reg
 				p_out->write(toggle);
 				acc+=fifo_tmp;
 
-				leakyReLu
 				if(acc<0)
 					acc*=0.001;
 				
@@ -170,7 +170,7 @@ idle: if(start != SC_LOGIC_0) goto start_state;//wait for start reg
       //find most convincing result of 10 output neurons
       max_res=res_v[0];
       cl_num=0;
-      for(int j=1; j<10; j++)
+     
       int j=1;
  find_res:
          if(max_res<res_v[j])
